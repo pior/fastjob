@@ -4,3 +4,16 @@ up:
   - go:
       version: '1.12'
       modules: true
+
+commands:
+  test:
+    desc: Run the unittests
+    run: go test -cover ./...
+
+  lint:
+    desc: Lint the project
+    run: golangci-lint run
+
+  godoc:
+    desc: Starting GoDoc server on http://0.0.0.0:6060
+    run: (sleep 1; open http://0.0.0.0:6060/pkg/github.com/pior/fastjob/pkg/)& godoc -http=:6060

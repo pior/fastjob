@@ -16,12 +16,12 @@ type LocalRunner struct {
 	executor *Executor
 }
 
-func (r *LocalRunner) Enqueue(ctx context.Context, job Job) error {
-	go func() {
-		r.executor.Execute(ctx, job)
-	}()
+func NewLocalRunner() Runner {
+	return &LocalRunner{}
+}
 
-	return nil
+func (r *LocalRunner) Enqueue(ctx context.Context, job Job) error {
+	return r.executor.Execute(ctx, job)
 }
 
 // PubSubRunner enqueues jobs through GCP pubsub
@@ -30,7 +30,7 @@ type PubSubRunner struct {
 	topicName string
 }
 
-func NewPubSubRunner(client *pubsub.Client, topicName string) *PubSubRunner {
+func NewPubSubRunner(client *pubsub.Client, topicName string) Runner {
 	return &PubSubRunner{client, topicName}
 }
 

@@ -33,7 +33,7 @@ func (m *MockJob) Perform(ctx context.Context) error {
 
 func TestLocalRunner(t *testing.T) {
 	ctx := context.Background()
-	runner := fastjob.LocalRunner{}
+	runner := fastjob.NewLocalRunner()
 	job := &MockJob{}
 
 	sentinel.Reset()
@@ -61,8 +61,7 @@ func TestPubSubRunner(t *testing.T) {
 
 	// Run the worker
 	registry := fastjob.NewRegistry(NewMockJob)
-	executor := &fastjob.Executor{}
-	worker := fastjob.NewWorker(client.Subscription(subscriptionName), registry, executor)
+	worker := fastjob.NewWorker(client.Subscription(subscriptionName), registry, nil, nil)
 
 	wctx, cancel := context.WithTimeout(ctx, time.Second*5)
 	defer cancel()

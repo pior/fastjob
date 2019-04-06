@@ -44,9 +44,12 @@ func ExampleNewWorker() {
 	sub.ReceiveSettings.NumGoroutines = 1
 
 	jobRegistry := fastjob.NewRegistry()
-	// jobRegistry.Register(NewMockJob)
+	jobRegistry.Register(NewMockJob)
 
 	worker := fastjob.NewWorker(sub, jobRegistry, nil, nil)
 
-	worker.Run(ctx)
+	err = worker.Run(ctx)
+	if err != nil {
+		// TODO: Handle error.
+	}
 }
