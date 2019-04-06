@@ -1,4 +1,4 @@
-package lazy
+package fastjob
 
 import (
 	"context"

@@ -1,14 +1,24 @@
-package lazy
+package fastjob
 
 import "fmt"
 
 type JobType func() Job
 
 type JobRegistry struct {
-	jobTypes map[string]func() Job
+	jobTypes map[string]JobType
 }
 
-func (r *JobRegistry) Register(jobType func() Job) {
+func NewRegistry(jobTypes ...JobType) *JobRegistry {
+	reg := &JobRegistry{
+		jobTypes: make(map[string]JobType),
+	}
+	for _, jobType := range jobTypes {
+		reg.Register(jobType)
+	}
+	return reg
+}
+
+func (r *JobRegistry) Register(jobType JobType) {
 	jobName := jobType().Name()
 	if jobName == "" {
 		panic(fmt.Sprintf("Job %T.Name() cannot be empty string", jobType))
@@ -16,7 +26,7 @@ func (r *JobRegistry) Register(jobType func() Job) {
 	r.jobTypes[jobType().Name()] = jobType
 }
 
-func (r *JobRegistry) Get(name string) (func() Job, error) {
+func (r *JobRegistry) Get(name string) (JobType, error) {
 	jobType, ok := r.jobTypes[name]
 	if !ok {
 		return nil, fmt.Errorf("JobType %q does not exist", name)

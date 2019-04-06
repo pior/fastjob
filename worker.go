@@ -1,4 +1,4 @@
-package lazy
+package fastjob
 
 import (
 	"context"
@@ -7,46 +7,33 @@ import (
 	"cloud.google.com/go/pubsub"
 )
 
+// Worker
 type Worker struct {
 	subscription *pubsub.Subscription
-	registry     *JobRegistry
+	jobRegistry  *JobRegistry
 	executor     *Executor
+	logger       Logger
 }
-
-func NewWorker(subscription *pubsub.Subscription, registry *JobRegistry, executor *Executor) *Worker {
-	return &Worker{subscription, registry, executor}
-}
-
-// func NewWorker(ctx context.Context, projectID, subscriptionName string) (*Worker, error) {
-// 	client, err := pubsub.NewClient(ctx, projectID)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	sub := client.Subscription(subscriptionName)
-// 	sub.ReceiveSettings.MaxOutstandingMessages = 50
-// 	sub.ReceiveSettings.MaxExtension = 20 * time.Second
-
-// 	w := &Worker{
-// 		subscription: sub,
-// 		registry:     registry,
-
-// 	}
-// 	return w, nil
-// }
 
 func (w *Worker) Run(ctx context.Context) error {
+	w.logger.Infof(ctx, "Connecting to PubSub")
+
 	return w.subscription.Receive(ctx, func(ctx context.Context, msg *pubsub.Message) {
+		w.logger.Debugf(ctx, "preparing job for msg: %s", msg.Data)
 		job, err := w.prepareJob(ctx, msg)
 		if err != nil {
+			w.logger.Errorf(ctx, err, "failed to prepare job")
 			msg.Nack()
 		}
 
+		w.logger.Debugf(ctx, "executing job %s", job.Name())
 		err = w.executor.Execute(ctx, job)
 		if err != nil {
+			w.logger.Errorf(ctx, err, "failed to execute job %s", job.Name())
 			msg.Nack()
 		}
 
+		w.logger.Debugf(ctx, "succeed to execute job: %s", job.Name())
 		msg.Ack()
 	})
 }
@@ -58,7 +45,7 @@ func (w *Worker) prepareJob(ctx context.Context, msg *pubsub.Message) (Job, erro
 		return nil, err
 	}
 
-	jobType, err := w.registry.Get(req.JobName)
+	jobType, err := w.jobRegistry.Get(req.JobName)
 	if err != nil {
 		return nil, err
 	}

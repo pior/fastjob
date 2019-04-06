@@ -1,4 +1,4 @@
-module github.com/pior/lazy
+module github.com/pior/fastjob
 
 go 1.12
 
