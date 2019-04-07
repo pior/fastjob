@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
+	"github.com/rs/xid"
 )
 
 type JobRequest struct {
@@ -27,7 +27,7 @@ func NewJobRequest(job Job) (*JobRequest, error) {
 	}
 
 	req := &JobRequest{
-		RequestID:   uuid.New().String(),
+		RequestID:   xid.New().String(),
 		RequestTime: time.Now().Unix(),
 
 		JobName: job.Name(),

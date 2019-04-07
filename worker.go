@@ -24,7 +24,7 @@ func (w *Worker) Run(ctx context.Context) error {
 	w.logger.Infof(ctx, "Connecting to PubSub (subscription: %s)", w.subscription)
 
 	err := w.subscription.Receive(ctx, func(ctx context.Context, msg *pubsub.Message) {
-		w.logger.Debugf(ctx, "processing message %s (%s)", msg.ID, msg.PublishTime)
+		w.logger.Debugf(ctx, "processing message %s (enqueued at %s)", msg.ID, msg.PublishTime)
 
 		request := &JobRequest{}
 		err := json.Unmarshal(msg.Data, request)
@@ -43,7 +43,7 @@ func (w *Worker) Run(ctx context.Context) error {
 	})
 
 	if err != nil {
-		w.logger.Errorf(ctx, err, "subscription stopped with an error")
+		w.logger.Errorf(ctx, err, "Subscription receive stopped")
 	} else {
 		w.logger.Infof(ctx, "Connection to PubSub was closed")
 	}

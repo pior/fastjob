@@ -8,20 +8,6 @@ import (
 	"github.com/pior/fastjob"
 )
 
-func NewMockJob() fastjob.Job {
-	return &MockJob{}
-}
-
-type MockJob struct{}
-
-func (m *MockJob) Name() string {
-	return "MockJob"
-}
-
-func (m *MockJob) Perform(ctx context.Context) error {
-	return nil
-}
-
 func ExampleNewWorker() {
 	ctx := context.Background()
 

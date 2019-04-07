@@ -4,6 +4,10 @@ up:
   - go:
       version: '1.12'
       modules: true
+  - custom:
+      name: go mod tidy
+      met?: go mod tidy
+      meet: 'true'
 
 commands:
   test:
