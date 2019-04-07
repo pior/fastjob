@@ -2,6 +2,7 @@ package fastjob
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,6 +14,10 @@ type JobRequest struct {
 
 	JobName string
 	JobData []byte
+}
+
+func (r *JobRequest) String() string {
+	return fmt.Sprintf("<%s-%s>", r.JobName, r.RequestID)
 }
 
 func NewJobRequest(job Job) (*JobRequest, error) {

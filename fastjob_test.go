@@ -43,10 +43,9 @@ func ExampleNewWorker() {
 	sub.ReceiveSettings.MaxExtension = 1 * time.Minute
 	sub.ReceiveSettings.NumGoroutines = 1
 
-	jobRegistry := fastjob.NewRegistry()
-	jobRegistry.Register(NewMockJob)
-
-	worker := fastjob.NewWorker(sub, jobRegistry, nil, nil)
+	registry := fastjob.NewRegistry(NewMockJob)
+	config := fastjob.NewConfig(registry)
+	worker := fastjob.NewWorker(config, sub)
 
 	err = worker.Run(ctx)
 	if err != nil {

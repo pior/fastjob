@@ -11,16 +11,15 @@ import (
 	"github.com/pior/fastjob"
 )
 
-const subscriptionName = "sub-test"
-const topicName = "topic-test"
-
 var sentinel = &Sentinel{}
 
 func NewMockJob() fastjob.Job {
 	return &MockJob{}
 }
 
-type MockJob struct{}
+type MockJob struct {
+	err error
+}
 
 func (m *MockJob) Name() string {
 	return "MockJob"
@@ -28,17 +27,21 @@ func (m *MockJob) Name() string {
 
 func (m *MockJob) Perform(ctx context.Context) error {
 	sentinel.Touch()
-	return nil
+	return m.err
 }
 
 func TestLocalRunner(t *testing.T) {
 	ctx := context.Background()
-	runner := fastjob.NewLocalRunner()
-	job := &MockJob{}
+
+	registry := fastjob.NewRegistry(NewMockJob)
+	config := fastjob.NewConfig(registry)
+	runner := fastjob.NewLocalRunner(config)
 
 	sentinel.Reset()
 
-	runner.Enqueue(ctx, job)
+	job := &MockJob{}
+	err := runner.Enqueue(ctx, job)
+	require.NoError(t, err)
 
 	require.NoError(t, sentinel.Wait())
 }
@@ -46,26 +49,33 @@ func TestLocalRunner(t *testing.T) {
 func TestPubSubRunner(t *testing.T) {
 	ctx := context.Background()
 
-	client, err := pubsub.NewClient(ctx, "fake-projectid-emulator")
+	client, err := pubsub.NewClient(ctx, "fake-id")
 	require.NoError(t, err)
 	defer client.Close()
 
-	ensureResourceReady(t, client, topicName, subscriptionName)
+	topicName, subscriptionName := prepareTopicSub(t, client)
 
 	sentinel.Reset()
 
 	// Enqueue job
 	runner := fastjob.NewPubSubRunner(client, topicName)
+
 	err = runner.Enqueue(ctx, &MockJob{})
 	require.NoError(t, err)
 
 	// Run the worker
 	registry := fastjob.NewRegistry(NewMockJob)
-	worker := fastjob.NewWorker(client.Subscription(subscriptionName), registry, nil, nil)
+	config := fastjob.NewConfig(registry)
+	sub := client.Subscription(subscriptionName)
+	worker := fastjob.NewWorker(config, sub)
 
 	wctx, cancel := context.WithTimeout(ctx, time.Second*5)
 	defer cancel()
-	go worker.Run(wctx)
+
+	go func() {
+		err := worker.Run(wctx)
+		require.NoError(t, err)
+	}()
 
 	require.NoError(t, sentinel.Wait())
 }

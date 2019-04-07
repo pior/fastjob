@@ -40,25 +40,18 @@ func (s *Sentinel) Wait() error {
 	return s.WaitFor(time.Second*5, 1)
 }
 
-func ensureResourceReady(t *testing.T, client *pubsub.Client, topicName, subscriptionName string) {
+func prepareTopicSub(t *testing.T, client *pubsub.Client) (topicName, subscriptionName string) {
 	ctx := context.Background()
 
-	topic := client.Topic(topicName)
+	topicName = fmt.Sprintf("topic-%d", time.Now().Unix())
+	subscriptionName = "sub-" + topicName
 
-	exists, err := topic.Exists(ctx)
+	topic, err := client.CreateTopic(ctx, topicName)
 	require.NoError(t, err)
 
-	if !exists {
-		topic, err = client.CreateTopic(ctx, topicName)
-		require.NoError(t, err)
-	}
-
-	exists, err = client.Subscription(subscriptionName).Exists(ctx)
+	subConfig := pubsub.SubscriptionConfig{Topic: topic}
+	_, err = client.CreateSubscription(ctx, subscriptionName, subConfig)
 	require.NoError(t, err)
 
-	if !exists {
-		subConfig := pubsub.SubscriptionConfig{Topic: topic}
-		_, err = client.CreateSubscription(ctx, subscriptionName, subConfig)
-		require.NoError(t, err)
-	}
+	return
 }

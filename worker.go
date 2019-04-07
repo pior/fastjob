@@ -3,6 +3,7 @@ package fastjob
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"cloud.google.com/go/pubsub"
 )
@@ -10,51 +11,55 @@ import (
 // Worker
 type Worker struct {
 	subscription *pubsub.Subscription
-	jobRegistry  *JobRegistry
 	executor     *Executor
 	logger       Logger
 }
 
-func (w *Worker) Run(ctx context.Context) error {
-	w.logger.Infof(ctx, "Connecting to PubSub")
-
-	return w.subscription.Receive(ctx, func(ctx context.Context, msg *pubsub.Message) {
-		w.logger.Debugf(ctx, "preparing job for msg: %s", msg.Data)
-		job, err := w.prepareJob(ctx, msg)
-		if err != nil {
-			w.logger.Errorf(ctx, err, "failed to prepare job")
-			msg.Nack()
-		}
-
-		w.logger.Debugf(ctx, "executing job %s", job.Name())
-		err = w.executor.Execute(ctx, job)
-		if err != nil {
-			w.logger.Errorf(ctx, err, "failed to execute job %s", job.Name())
-			msg.Nack()
-		}
-
-		w.logger.Debugf(ctx, "succeed to execute job: %s", job.Name())
-		msg.Ack()
-	})
+// NewWorker creates a new PubSub worker to execute jobs enqueued in a PubSub Topic.
+func NewWorker(config *config, subscription *pubsub.Subscription) *Worker {
+	return &Worker{subscription, NewExecutor(config), config.logger}
 }
 
-func (w *Worker) prepareJob(ctx context.Context, msg *pubsub.Message) (Job, error) {
-	req := &JobRequest{}
-	err := json.Unmarshal(msg.Data, req)
-	if err != nil {
-		return nil, err
-	}
+func (w *Worker) Run(ctx context.Context) error {
+	w.logger.Infof(ctx, "Connecting to PubSub (subscription: %s)", w.subscription)
 
-	jobType, err := w.jobRegistry.Get(req.JobName)
-	if err != nil {
-		return nil, err
-	}
+	err := w.subscription.Receive(ctx, func(ctx context.Context, msg *pubsub.Message) {
+		w.logger.Debugf(ctx, "processing message %s (%s)", msg.ID, msg.PublishTime)
 
-	job := jobType()
-	err = json.Unmarshal(req.JobData, &job)
-	if err != nil {
-		return nil, err
-	}
+		request := &JobRequest{}
+		err := json.Unmarshal(msg.Data, request)
+		if err != nil {
+			w.logger.Errorf(ctx, err, "failed to unmarshal the job request from message %s", msg.ID)
+			w.handleInvalidRequest(ctx, msg)
+		}
 
-	return job, nil
+		err = w.executor.Execute(ctx, request)
+		if err != nil {
+			w.logger.Errorf(ctx, err, "failed to execute job %s", request)
+			w.handleJobFailure(ctx, msg, request)
+		}
+
+		msg.Ack()
+	})
+
+	if err != nil {
+		w.logger.Errorf(ctx, err, "subscription stopped with an error")
+	} else {
+		w.logger.Infof(ctx, "Connection to PubSub was closed")
+	}
+	return err
+}
+
+// TODO: make the error handler a changeable component
+
+func (w *Worker) handleInvalidRequest(ctx context.Context, msg *pubsub.Message) {
+	// By default, do nothing, not even Nack the message
+	// It will get dispatch again after the default lease period
+}
+
+func (w *Worker) handleJobFailure(ctx context.Context, msg *pubsub.Message, request *JobRequest) {
+	// Block the message for some time, then Nack it to get it redelivered
+	// This consumes one goroutine (4k on stack) per sleeping message
+	time.Sleep(time.Second * 10)
+	msg.Nack()
 }

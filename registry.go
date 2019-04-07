@@ -2,8 +2,6 @@ package fastjob
 
 import "fmt"
 
-type JobType func() Job
-
 type JobRegistry struct {
 	jobTypes map[string]JobType
 }

@@ -14,14 +14,28 @@ type Runner interface {
 // LocalRunner runs jobs synchronously
 type LocalRunner struct {
 	executor *Executor
+	logger   Logger
 }
 
-func NewLocalRunner() Runner {
-	return &LocalRunner{}
+func NewLocalRunner(config *config) Runner {
+	return &LocalRunner{
+		executor: NewExecutor(config),
+		logger:   config.logger,
+	}
 }
 
 func (r *LocalRunner) Enqueue(ctx context.Context, job Job) error {
-	return r.executor.Execute(ctx, job)
+	// LocalRunner is probably used during development and test
+	// So let's re-use the same flow as the PubSub runner:
+	// Job -> JobRequest -> (queue) -> lookup in JobRegistry -> Job.Perform()
+
+	request, err := NewJobRequest(job)
+	if err != nil {
+		return err
+	}
+
+	err = r.executor.Execute(ctx, request)
+	return err
 }
 
 // PubSubRunner enqueues jobs through GCP pubsub

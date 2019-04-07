@@ -8,7 +8,7 @@ up:
 commands:
   test:
     desc: Run the unittests
-    run: go test -cover ./...
+    run: go test -cover -count=1 ./...
 
   lint:
     desc: Lint the project
