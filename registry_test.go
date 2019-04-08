@@ -20,11 +20,12 @@ func (m *NoNameJob) Perform(ctx context.Context) error {
 }
 
 func TestJobRegistry(t *testing.T) {
-	reg := fastjob.NewRegistry().WithJobs(&MockJob{})
+	job := &MockJob{Value: 42}
+	reg := fastjob.NewRegistry().WithJobs(job)
 
-	jobType, err := reg.Get("MockJob")
+	jobType, err := reg.Get(job.Name())
 	require.NoError(t, err)
-	require.Equal(t, NewMockJob().Name(), jobType().Name())
+	require.Equal(t, job.Name(), jobType().Name())
 }
 
 func TestJobRegistryInvalidJob(t *testing.T) {
@@ -32,7 +33,7 @@ func TestJobRegistryInvalidJob(t *testing.T) {
 		fastjob.NewRegistry().WithJobs(nil)
 	})
 
-	require.Panics(t, func() {
+	require.PanicsWithValue(t, "The name of *fastjob_test.NoNameJob cannot be empty string", func() {
 		fastjob.NewRegistry().WithJobs(&NoNameJob{})
 	})
 }

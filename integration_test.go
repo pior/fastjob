@@ -23,7 +23,7 @@ func NewMockJob() *MockJob {
 }
 
 type MockJob struct {
-	err error
+	Value int
 }
 
 func (m *MockJob) Name() string {
@@ -31,8 +31,8 @@ func (m *MockJob) Name() string {
 }
 
 func (m *MockJob) Perform(ctx context.Context) error {
-	sentinel.Touch()
-	return m.err
+	sentinel.Set(m.Value)
+	return nil
 }
 
 func TestLocalRunner(t *testing.T) {
@@ -44,11 +44,11 @@ func TestLocalRunner(t *testing.T) {
 
 	sentinel.Reset()
 
-	job := &MockJob{}
+	job := &MockJob{Value: 1}
 	err := runner.Enqueue(ctx, job)
 	require.NoError(t, err)
 
-	require.NoError(t, sentinel.Wait())
+	require.NoError(t, sentinel.Wait(1))
 }
 
 func TestPubSubRunner(t *testing.T) {
@@ -58,7 +58,7 @@ func TestPubSubRunner(t *testing.T) {
 
 	sentinel.Reset()
 
-	err := helper.Runner().Enqueue(ctx, &MockJob{})
+	err := helper.Runner().Enqueue(ctx, &MockJob{Value: 1})
 	require.NoError(t, err)
 
 	wctx, cancel := context.WithTimeout(ctx, time.Second*2)
@@ -73,7 +73,8 @@ func TestPubSubRunner(t *testing.T) {
 		wg.Done()
 	}()
 
-	require.NoError(t, sentinel.Wait())
+	require.NoError(t, sentinel.Wait(1))
+	cancel()
 	wg.Wait()
 }
 

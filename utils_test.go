@@ -18,15 +18,15 @@ func (s *Sentinel) Reset() {
 	s.value = 0
 }
 
-func (s *Sentinel) Touch() {
-	s.value++
+func (s *Sentinel) Set(value int) {
+	s.value = value
 }
 
-func (s *Sentinel) WaitFor(timeout time.Duration, count int) error {
+func (s *Sentinel) WaitFor(timeout time.Duration, value int) error {
 	deadline := time.Now().Add(timeout)
 	sleepTime := time.Millisecond * 100
 	for {
-		if s.value >= count {
+		if s.value == value {
 			return nil
 		}
 		if time.Now().After(deadline) {
@@ -36,8 +36,8 @@ func (s *Sentinel) WaitFor(timeout time.Duration, count int) error {
 	}
 }
 
-func (s *Sentinel) Wait() error {
-	return s.WaitFor(time.Second*5, 1)
+func (s *Sentinel) Wait(value int) error {
+	return s.WaitFor(time.Second*5, value)
 }
 
 type pubsubHelper struct {

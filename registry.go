@@ -18,14 +18,19 @@ func NewRegistry() *JobRegistry {
 
 func (r *JobRegistry) WithJobs(jobs ...Job) *JobRegistry {
 	for _, job := range jobs {
-		if job.Name() == "" {
-			panic(fmt.Sprintf("Job %T.Name() cannot be empty string", job))
-		}
-
-		jobType := reflect.TypeOf(job).Elem()
-
-		r.jobTypes[job.Name()] = func() Job { return reflect.New(jobType).Interface().(Job) }
+		r.WithJob(job)
 	}
+	return r
+}
+
+func (r *JobRegistry) WithJob(job Job) *JobRegistry {
+	if job.Name() == "" {
+		panic(fmt.Sprintf("The name of %T cannot be empty string", job))
+	}
+
+	jobType := reflect.TypeOf(job).Elem()
+
+	r.jobTypes[job.Name()] = func() Job { return reflect.New(jobType).Interface().(Job) }
 	return r
 }
 
