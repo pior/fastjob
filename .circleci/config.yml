@@ -30,20 +30,17 @@ jobs:
           curl https://sdk.cloud.google.com | bash
       - run: |
           source ~/google-cloud-sdk/path.bash.inc
-          gcloud version
           gcloud components install beta
           gcloud components install pubsub-emulator
       - run:
-          command: source ~/google-cloud-sdk/path.bash.inc; gcloud beta emulators pubsub start
+          command: |
+            source ~/google-cloud-sdk/path.bash.inc
+            gcloud beta emulators pubsub start
           background: true
 
       - run: |
           source ~/google-cloud-sdk/path.bash.inc
+          for RETRY in $(seq 20); do gcloud beta emulators pubsub env-init && break; sleep 1; done
           eval "$(gcloud beta emulators pubsub env-init)"
-          go test -v -cover ./...
 
-# cd "$(mktemp -d)"
-# curl -sL -o gcloud.tar.gz https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-241.0.0-linux-x86_64.tar.gz
-# tar xzf gcloud.tar.gz
-# google-cloud-sdk/install.sh
-# gcloud
+          go test -v -cover ./...
