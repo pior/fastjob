@@ -43,4 +43,6 @@ jobs:
           for RETRY in $(seq 20); do gcloud beta emulators pubsub env-init && break; sleep 1; done
           eval "$(gcloud beta emulators pubsub env-init)"
 
-          go test -v -cover ./...
+          go test -v -coverprofile=coverage.txt -covermode=atomic ./...
+
+      - run: bash <(curl -s https://codecov.io/bash)
