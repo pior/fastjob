@@ -18,10 +18,6 @@ func init() {
 	helper = &pubsubHelper{projectID: "fake-id"}
 }
 
-func NewMockJob() *MockJob {
-	return &MockJob{}
-}
-
 type MockJob struct {
 	Value int
 }
