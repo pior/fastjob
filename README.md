@@ -23,7 +23,7 @@ Strategies:
 
 ```golang
 type PingHTTP struct{
-    url string
+    Url string
 }
 
 func (m *PingHTTP) Name() string {
@@ -31,29 +31,28 @@ func (m *PingHTTP) Name() string {
 }
 
 func (m *PingHTTP) Perform(ctx context.Context) error {
-    _, err := http.Post(m.url)
+    _, err := http.Post(m.Url)
 	return err
 }
-
-func NewPingHTTP() fastjob.Job {
-	return &PingHTTP{}
-}
 ```
+
+Note: the job will be JSON encoded, only **public** fields should be used to define the job inputs.
+
 
 #### Register the job:
 
 ```golang
-registry := fastjob.NewRegistry()
-registry.Register(NewPingHTTP)
+registry := fastjob.NewRegistry().WithJob(&PingHTTP{})
 ```
 
 #### Run the worker:
 
 ```golang
-client, _ := pubsub.NewClient(ctx, "my-gcp-project-id")
+client, err := pubsub.NewClient(ctx, "my-gcp-project-id")
 sub := client.Subscription("sub-test")
+config := fastjob.NewConfig(registry)
 
-worker := fastjob.NewPubsubWorker(sub, registry, nil, nil)
+worker := fastjob.NewPubsubWorker(config, sub)
 worker.Run(ctx)
 ```
 
@@ -62,7 +61,7 @@ worker.Run(ctx)
 ```golang
 runner := fastjob.NewPubSubRunner(client, topicName)
 
-job := &PingHTTP{url: "http://example.org/hello"}
+job := &PingHTTP{Url: "http://example.org/hello"}
 err = runner.Enqueue(ctx, job)
 ```
 
@@ -70,6 +69,7 @@ err = runner.Enqueue(ctx, job)
 
 ```golang
 runner := fastjob.NewLocalRunner()
+
 err = runner.Enqueue(ctx, job)
 ```
 
