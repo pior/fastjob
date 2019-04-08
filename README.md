@@ -2,6 +2,7 @@
 
 [![GoDoc](https://godoc.org/github.com/pior/fastjob?status.svg)](https://godoc.org/github.com/pior/fastjob)
 [![Go Report Card](https://goreportcard.com/badge/github.com/pior/fastjob)](https://goreportcard.com/report/github.com/pior/fastjob)
+[![CircleCI](https://circleci.com/gh/pior/fastjob.svg?style=svg)](https://circleci.com/gh/pior/fastjob)
 
 Fastjob is a fast and robust job queue using Google Cloud PubSub 🛰
 
