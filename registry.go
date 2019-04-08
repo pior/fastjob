@@ -1,27 +1,32 @@
 package fastjob
 
-import "fmt"
+import (
+	"fmt"
+	"reflect"
+)
+
+// JobType is the job factory. Used to allocate a job struct when receiving a job request to process.
+type JobType func() Job
 
 type JobRegistry struct {
 	jobTypes map[string]JobType
 }
 
-func NewRegistry(jobTypes ...JobType) *JobRegistry {
-	reg := &JobRegistry{
-		jobTypes: make(map[string]JobType),
-	}
-	for _, jobType := range jobTypes {
-		reg.Register(jobType)
-	}
-	return reg
+func NewRegistry() *JobRegistry {
+	return &JobRegistry{make(map[string]JobType)}
 }
 
-func (r *JobRegistry) Register(jobType JobType) {
-	jobName := jobType().Name()
-	if jobName == "" {
-		panic(fmt.Sprintf("Job %T.Name() cannot be empty string", jobType))
+func (r *JobRegistry) WithJobs(jobs ...Job) *JobRegistry {
+	for _, job := range jobs {
+		if job.Name() == "" {
+			panic(fmt.Sprintf("Job %T.Name() cannot be empty string", job))
+		}
+
+		jobType := reflect.TypeOf(job).Elem()
+
+		r.jobTypes[job.Name()] = func() Job { return reflect.New(jobType).Interface().(Job) }
 	}
-	r.jobTypes[jobType().Name()] = jobType
+	return r
 }
 
 func (r *JobRegistry) Get(name string) (JobType, error) {

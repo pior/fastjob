@@ -18,7 +18,7 @@ func init() {
 	helper = &pubsubHelper{projectID: "fake-id"}
 }
 
-func NewMockJob() fastjob.Job {
+func NewMockJob() *MockJob {
 	return &MockJob{}
 }
 
@@ -38,7 +38,7 @@ func (m *MockJob) Perform(ctx context.Context) error {
 func TestLocalRunner(t *testing.T) {
 	ctx := context.Background()
 
-	registry := fastjob.NewRegistry(NewMockJob)
+	registry := fastjob.NewRegistry().WithJobs(&MockJob{})
 	config := fastjob.NewConfig(registry)
 	runner := fastjob.NewLocalRunner(config)
 

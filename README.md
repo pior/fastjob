@@ -53,7 +53,7 @@ registry.Register(NewPingHTTP)
 client, _ := pubsub.NewClient(ctx, "my-gcp-project-id")
 sub := client.Subscription("sub-test")
 
-worker := fastjob.NewWorker(sub, registry, nil, nil)
+worker := fastjob.NewPubsubWorker(sub, registry, nil, nil)
 worker.Run(ctx)
 ```
 

@@ -95,8 +95,8 @@ func (h *pubsubHelper) Runner() fastjob.Runner {
 	return fastjob.NewPubSubRunner(h.GetClient(), h.topicName)
 }
 
-func (h *pubsubHelper) Worker() *fastjob.Worker {
-	registry := fastjob.NewRegistry(NewMockJob)
+func (h *pubsubHelper) Worker() *fastjob.PubsubWorker {
+	registry := fastjob.NewRegistry().WithJobs(&MockJob{})
 	config := fastjob.NewConfig(registry)
-	return fastjob.NewWorker(config, h.subscription)
+	return fastjob.NewPubsubWorker(config, h.subscription)
 }

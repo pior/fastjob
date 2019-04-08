@@ -8,19 +8,20 @@ import (
 	"cloud.google.com/go/pubsub"
 )
 
-// Worker
-type Worker struct {
+// PubsubWorker
+type PubsubWorker struct {
 	subscription *pubsub.Subscription
 	executor     *Executor
 	logger       Logger
 }
 
-// NewWorker creates a new PubSub worker to execute jobs enqueued in a PubSub Topic.
-func NewWorker(config *config, subscription *pubsub.Subscription) *Worker {
-	return &Worker{subscription, NewExecutor(config), config.logger}
+// NewPubsubWorker creates a new PubSub worker to execute jobs enqueued in a PubSub Topic.
+func NewPubsubWorker(config *config, subscription *pubsub.Subscription) *PubsubWorker {
+	return &PubsubWorker{subscription, NewExecutor(config), config.logger}
 }
 
-func (w *Worker) Run(ctx context.Context) error {
+// Run runs the Pubsub worker until an error occurs or the context is cancelled
+func (w *PubsubWorker) Run(ctx context.Context) error {
 	w.logger.Infof(ctx, "Connecting to PubSub (subscription: %s)", w.subscription)
 
 	err := w.subscription.Receive(ctx, func(ctx context.Context, msg *pubsub.Message) {
@@ -52,12 +53,12 @@ func (w *Worker) Run(ctx context.Context) error {
 
 // TODO: make the error handler a changeable component
 
-func (w *Worker) handleInvalidRequest(ctx context.Context, msg *pubsub.Message) {
+func (w *PubsubWorker) handleInvalidRequest(ctx context.Context, msg *pubsub.Message) {
 	// By default, do nothing, not even Nack the message
 	// It will get dispatch again after the default lease period
 }
 
-func (w *Worker) handleJobFailure(ctx context.Context, msg *pubsub.Message, request *JobRequest) {
+func (w *PubsubWorker) handleJobFailure(ctx context.Context, msg *pubsub.Message, request *JobRequest) {
 	// Block the message for some time, then Nack it to get it redelivered
 	// This consumes one goroutine (4k on stack) per sleeping message
 	time.Sleep(time.Second * 10)

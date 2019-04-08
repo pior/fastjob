@@ -8,7 +8,7 @@ import (
 	"github.com/pior/fastjob"
 )
 
-func ExampleNewWorker() {
+func ExampleNewPubsubWorker() {
 	ctx := context.Background()
 
 	client, err := pubsub.NewClient(ctx, "my-gcp-project-id")
@@ -24,14 +24,14 @@ func ExampleNewWorker() {
 	//   MaxOutstandingMessages: 1000,
 	//   MaxOutstandingBytes:    1e9,
 	//   NumGoroutines:          1,
+	sub.ReceiveSettings.MaxExtension = 1 * time.Minute
 	sub.ReceiveSettings.MaxOutstandingMessages = 100
 	sub.ReceiveSettings.MaxOutstandingBytes = 100e6
-	sub.ReceiveSettings.MaxExtension = 1 * time.Minute
 	sub.ReceiveSettings.NumGoroutines = 1
 
-	registry := fastjob.NewRegistry(NewMockJob)
+	registry := fastjob.NewRegistry().WithJobs(&MockJob{})
 	config := fastjob.NewConfig(registry)
-	worker := fastjob.NewWorker(config, sub)
+	worker := fastjob.NewPubsubWorker(config, sub)
 
 	err = worker.Run(ctx)
 	if err != nil {
